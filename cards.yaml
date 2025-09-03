@@ -3,3 +3,13 @@
   front: Hello
   id: 1
   language_pair: en-es
+- back: Me llamo Jordan.
+  created_at: '2025-09-03T14:24:46.508366'
+  front: My name is Jordan.
+  id: 2
+  language_pair: en-es
+- back: Me gustaría ir a la piscina hoy, pero hace demasiado frío afuera.
+  created_at: '2025-09-03T14:25:22.142757'
+  front: I'd like to go to the pool today but it's too cold outside.
+  id: 3
+  language_pair: en-es

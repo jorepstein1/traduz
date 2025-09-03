@@ -3,13 +3,23 @@ import yaml
 import os
 import sys
 from datetime import datetime
+from dataclasses import dataclass
+from typing import List, Optional
 
-class TranslationCard:
-    def __init__(self, yaml_file="cards.yaml"):
+@dataclass
+class Card:
+    id: int
+    front: str
+    back: str
+    created_at: str
+    language_pair: str
+
+class Translator:
+    def __init__(self, yaml_file: str = "cards.yaml") -> None:
         self.yaml_file = yaml_file
         self.base_url = "https://api.mymemory.translated.net/get"
     
-    def translate_text(self, text, source_lang="en", target_lang="es"):
+    def translate_text(self, text: str, source_lang: str = "en", target_lang: str = "es") -> Optional[str]:
         """
         Translate text using MyMemory Translation API (free service)
         """
@@ -38,34 +48,38 @@ class TranslationCard:
             print(f"Translation failed: {e}")
             return None
     
-    def load_existing_cards(self):
+    def load_existing_cards(self) -> List[Card]:
         """Load existing cards from YAML file"""
         if os.path.exists(self.yaml_file):
             try:
                 with open(self.yaml_file, 'r', encoding='utf-8') as file:
-                    return yaml.safe_load(file) or []
+                    data = yaml.safe_load(file) or []
+                    return [Card(**card_data) for card_data in data]
             except Exception as e:
                 print(f"Error loading existing cards: {e}")
                 return []
         return []
     
-    def save_card(self, english_text, spanish_text):
+    def save_card(self, english_text: str, spanish_text: str) -> bool:
         """Save a new translation card to the YAML file"""
         try:
             cards = self.load_existing_cards()
             
-            new_card = {
-                'id': len(cards) + 1,
-                'front': english_text,
-                'back': spanish_text,
-                'created_at': datetime.now().isoformat(),
-                'language_pair': 'en-es'
-            }
+            new_card = Card(
+                id=len(cards) + 1,
+                front=english_text,
+                back=spanish_text,
+                created_at=datetime.now().isoformat(),
+                language_pair='en-es'
+            )
             
             cards.append(new_card)
             
+            # Convert cards to dict format for YAML serialization
+            cards_dict = [card.__dict__ for card in cards]
+            
             with open(self.yaml_file, 'w', encoding='utf-8') as file:
-                yaml.dump(cards, file, default_flow_style=False, allow_unicode=True, indent=2)
+                yaml.dump(cards_dict, file, default_flow_style=False, allow_unicode=True, indent=2)
             
             print(f"✅ Card saved successfully!")
             print(f"   Front (English): {english_text}")
@@ -76,7 +90,7 @@ class TranslationCard:
             print(f"Error saving card: {e}")
             return False
     
-    def create_translation_card(self, english_query):
+    def create_translation_card(self, english_query: str) -> bool:
         """Main method to create a translation card"""
         print(f"🔄 Translating: '{english_query}'")
         
@@ -90,7 +104,7 @@ class TranslationCard:
             print("❌ Translation failed. Card not created.")
             return False
     
-    def display_all_cards(self):
+    def display_all_cards(self) -> None:
         """Display all existing cards"""
         cards = self.load_existing_cards()
         if not cards:
@@ -100,17 +114,17 @@ class TranslationCard:
         print(f"\n📚 All Translation Cards ({len(cards)} total):")
         print("-" * 50)
         for card in cards:
-            print(f"ID: {card.get('id', 'N/A')}")
-            print(f"Front: {card.get('front', '')}")
-            print(f"Back: {card.get('back', '')}")
-            print(f"Created: {card.get('created_at', 'N/A')}")
+            print(f"ID: {card.id}")
+            print(f"Front: {card.front}")
+            print(f"Back: {card.back}")
+            print(f"Created: {card.created_at}")
             print("-" * 30)
 
-def main():
+def main() -> None:
     print("🌍 Traduz - English to Spanish Translation Cards")
     print("=" * 50)
     
-    translator = TranslationCard()
+    translator = Translator()
     
     while True:
         print("\nOptions:")

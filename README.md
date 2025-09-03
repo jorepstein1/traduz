@@ -13,18 +13,21 @@ A Python script that creates translation flashcards by translating English text 
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd traduz
 ```
 
 2. Create and activate a virtual environment:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -32,6 +35,7 @@ pip install -r requirements.txt
 ## Usage
 
 Run the script:
+
 ```bash
 python main.py
 ```
@@ -68,18 +72,19 @@ Translation cards are saved in `cards.yaml` with the following structure:
 
 ```yaml
 - back: Hola
-  created_at: '2025-09-03T13:42:03.049570'
+  created_at: "2025-09-03T13:42:03.049570"
   front: Hello
   id: 1
   language_pair: en-es
 - back: Buenos días
-  created_at: '2025-09-03T13:45:12.123456'
+  created_at: "2025-09-03T13:45:12.123456"
   front: Good morning
   id: 2
   language_pair: en-es
 ```
 
 Each card contains:
+
 - `id`: Unique identifier
 - `front`: English text (question side)
 - `back`: Spanish translation (answer side)
@@ -89,6 +94,7 @@ Each card contains:
 ## API Information
 
 This script uses the [MyMemory Translation API](https://mymemory.translated.net/), which provides:
+
 - Free translation service
 - No API key required
 - Rate limits apply for heavy usage
