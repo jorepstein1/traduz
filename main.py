@@ -417,7 +417,6 @@ class TraduzClient:
 
         :return: The DeepL API key if provided, None otherwise.
         """
-
         # Check if API key already exists
         existing_api_key = self.config_manager.get_deepl_api_key()
 
@@ -458,14 +457,18 @@ class TraduzClient:
 
         return self.mochi_client.create_card(self.selected_deck_id, front, back)
 
-    def translate_with_mymemory(self, text: str) -> Optional[str]:
+    def translate_with_mymemory(
+        self, text: str, from_lang: str, to_lang: str
+    ) -> Optional[str]:
         """
         Translate text using MyMemory Translation API (free service)
 
         :param text: The text to translate
+        :param from_lang: The source language code (e.g., 'en' for English)
+        :param to_lang: The target language code (e.g., 'es' for Spanish
         :return: The translated text or None if an error occurred
         """
-        params = {"q": text, "langpair": "en|essdfgsdfg"}
+        params = {"q": text, "langpair": f"{from_lang}|{to_lang}"}
 
         try:
             response = requests.get(self.base_url, params=params, timeout=10)
@@ -481,11 +484,15 @@ class TraduzClient:
         translated_text = data["responseData"]["translatedText"]
         return translated_text
 
-    def translate_with_deepl(self, text: str) -> Optional[str]:
+    def translate_with_deepl(
+        self, text: str, from_lang: str, to_lang: str
+    ) -> Optional[str]:
         """
         Translate text using DeepL API.
 
         :param text: The text to translate.
+        :param from_lang: The source language code (e.g., 'en' for English)
+        :param to_lang: The target language code (e.g., 'es' for Spanish
         :return: The translated text or None if an error occurred.
         """
         if not self.deepl_translator:
@@ -493,7 +500,7 @@ class TraduzClient:
 
         try:
             result = self.deepl_translator.translate_text(
-                text, target_lang="ES"
+                text, source_lang=from_lang, target_lang=to_lang
             )
         except deepl.DeepLException as e:
             print(f"DeepL translation error: {e}")
@@ -520,12 +527,14 @@ class TraduzClient:
                 return []
         return []
 
-    def save_card(self, english_text: str, spanish_text: str) -> bool:
+    def save_card(
+        self, from_text: str, to_text: str, from_language: str, to_language: str
+    ) -> bool:
         """
         Save a new translation card to the YAML file and optionally to Mochi.
 
-        :param english_text: The English text for the card.
-        :param spanish_text: The Spanish text for the card.
+        :param from_text: The source text for the card.
+        :param to_text: The translated text for the card.
         :return: True if the card was saved successfully, False otherwise.
         """
         try:
@@ -533,10 +542,10 @@ class TraduzClient:
 
             new_card = Card(
                 id=len(cards) + 1,
-                front=english_text,
-                back=spanish_text,
+                front=from_text,
+                back=to_text,
                 created_at=datetime.now().isoformat(),
-                language_pair="en-es",
+                language_pair=f"{from_language}-{to_language}",
             )
 
             cards.append(new_card)
@@ -551,13 +560,11 @@ class TraduzClient:
             # Also create card in Mochi if configured
             mochi_success = False
             if self.mochi_client and self.selected_deck_id:
-                mochi_success = self.create_mochi_card(
-                    english_text, spanish_text
-                )
+                mochi_success = self.create_mochi_card(from_text, to_text)
 
             print("✅ Card saved successfully!")
-            print(f"   Front (English): {english_text}")
-            print(f"   Back (Spanish): {spanish_text}")
+            print(f"   Front ({from_language}): {from_text}")
+            print(f"   Back ({to_language}): {to_text}")
 
             if self.mochi_client and self.selected_deck_id:
                 if mochi_success:
@@ -571,22 +578,26 @@ class TraduzClient:
             print(f"Error saving card: {e}")
             return False
 
-    def translate_query(self, english_query: str) -> bool:
+    def translate_query(self, query: str, from_lang: str, to_lang: str) -> bool:
         """
         Translate the given English query and save the result as a card.
 
         :param english_query: The English text to translate.
         :return: True if the card was created successfully, False otherwise.
         """
-        print(f"🔄 Translating: '{english_query}'")
+        print(f"🔄 Translating: '{query}'")
 
         if self.deepl_translator:
-            spanish_translation = self.translate_with_deepl(english_query)
+            translation = self.translate_with_deepl(
+                query, from_lang=from_lang, to_lang=to_lang
+            )
         else:
-            spanish_translation = self.translate_with_mymemory(english_query)
+            translation = self.translate_with_mymemory(
+                query, from_lang=from_lang, to_lang=to_lang
+            )
 
-        if spanish_translation and self.save_card(
-            english_query, spanish_translation
+        if translation and self.save_card(
+            query, translation, from_lang, to_lang
         ):
             return True
         else:
@@ -640,15 +651,26 @@ def main() -> None:
         choice = input("\nSelect an option (1-3): ").strip()
 
         if choice == "1":
-            english_query = input(
-                "\n📝 Enter English text to translate: "
+            print("\nLanguage Options: ")
+            print("1. English to Spanish")
+            print("2. Spanish to English")
+            choice = input("\nSelect an option (1-2): ").strip()
+            if choice == "1":
+                from_lang, to_lang = "EN", "ES"
+            elif choice == "2":
+                from_lang, to_lang = "ES", "EN-US"
+            else:
+                print("❌ Invalid choice. Please select 1 or 2.")
+                continue
+            query = input(
+                f"\n📝 Enter text ({from_lang}) to translate: "
             ).strip()
 
-            if not english_query:
+            if not query:
                 print("❌ Please enter some text to translate.")
                 continue
 
-            traduz_client.translate_query(english_query)
+            traduz_client.translate_query(query, from_lang, to_lang)
 
         elif choice == "2":
             traduz_client.display_all_cards()

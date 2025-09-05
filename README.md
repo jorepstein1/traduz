@@ -1,12 +1,13 @@
-# Traduz - English to Spanish Translation Cards
+# Traduz - English<-> Translation Cards
 
-A Python script that creates translation flashcards by translating English text to Spanish using external translation APIs and storing the results in a YAML file and optionally to Mochi Cards.
+A Python script that creates translation flashcards by translating between English and Spanish using external translation APIs and storing the results locally and optionally to Mochi Cards.
 
 ## Features
 
-- 🌍 Translates English text to Spanish using multiple translation services:
+- 🌍 Translates between English and Spanish using multiple translation services:
   - **MyMemory Translation API** (free, no account required)
   - **DeepL API** (free, requires account, higher quality)
+- 🔄 Bidirectional translation support (English ↔ Spanish)
 - 📚 Stores translation pairs as flashcard entries in YAML format
 - 🃏 Mochi Cards integration - sync cards to your Mochi decks
 - 🎯 Interactive command-line interface
@@ -81,7 +82,9 @@ The script supports two translation services:
 
 The script provides an interactive menu with these options:
 
-1. **Create new translation card**: Enter English text to translate to Spanish
+1. **Create new translation card**: Choose translation direction and enter text to translate
+   - English to Spanish
+   - Spanish to English
 2. **View all cards**: Display all saved translation cards
 3. **Exit**: Quit the application
 
@@ -130,11 +133,17 @@ Options:
 
 Select an option (1-3): 1
 
-📝 Enter English text to translate: Good morning
+Language Options:
+1. English to Spanish
+2. Spanish to English
+
+Select an option (1-2): 1
+
+📝 Enter text (EN) to translate: Good morning
 🔄 Translating: 'Good morning'
 ✅ Card saved successfully!
-   Front (English): Good morning
-   Back (Spanish): Buenos días
+   Front (EN): Good morning
+   Back (ES): Buenos días
    🃏 Also added to Mochi deck!
 ```
 
@@ -167,6 +176,11 @@ Local storage of all translation cards:
   front: Good morning
   id: 2
   language_pair: en-es
+- back: Thank you
+  created_at: "2025-09-03T14:20:30.789012"
+  front: Gracias
+  id: 3
+  language_pair: es-en
 ```
 
 ## Integrations
