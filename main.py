@@ -1,14 +1,16 @@
 import deepl
-import enum
 import requests
 import yaml
 import os
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Optional, Any
 
 CONFIG_FILE_NAME = "config.yaml"
 CARDS_FILE_NAME = "cards.yaml"
+
+MOCHI_BASE_URL = "https://app.mochi.cards/api"
+MYMEMORY_BASE_URL = "https://api.mymemory.translated.net/get"
 
 
 @dataclass
@@ -26,9 +28,57 @@ class MochiDeck:
     name: str
 
 
-class TranslationService(enum.Enum):
-    MY_MEMORY = "MyMemory"
-    DEEPL = "DeepL"  # Placeholder for potential future use
+def translate_with_mymemory(
+    text: str, from_lang: str, to_lang: str
+) -> Optional[str]:
+    """
+    Translate text using MyMemory Translation API (free service)
+
+    :param text: The text to translate
+    :param from_lang: The source language code (e.g., 'en' for English)
+    :param to_lang: The target language code (e.g., 'es' for Spanish
+    :return: The translated text or None if an error occurred
+    """
+    params = {"q": text, "langpair": f"{from_lang}|{to_lang}"}
+
+    try:
+        response = requests.get(MYMEMORY_BASE_URL, params=params, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"MyMemory translation request failed: {e}")
+        return None
+
+    data = response.json()
+    if data["responseStatus"] != 200:
+        print(f"Translation error: {data['responseDetails']}")
+        return None
+    translated_text = data["responseData"]["translatedText"]
+    return translated_text
+
+
+def translate_with_deepl(
+    deepl_translator: deepl.Translator, text: str, from_lang: str, to_lang: str
+) -> Optional[str]:
+    """
+    Translate text using DeepL API.
+
+    :param text: The text to translate.
+    :param from_lang: The source language code (e.g., 'en' for English)
+    :param to_lang: The target language code (e.g., 'es' for Spanish
+    :return: The translated text or None if an error occurred.
+    """
+    try:
+        result = deepl_translator.translate_text(
+            text, source_lang=from_lang, target_lang=to_lang
+        )
+    except deepl.DeepLException as e:
+        print(f"DeepL translation error: {e}")
+        return None
+
+    if isinstance(result, list):
+        # DeepL can return a list when multiple sentences are translated
+        result = result[0]
+    return result.text
 
 
 class MochiClient:
@@ -37,7 +87,6 @@ class MochiClient:
         :param api_key: The API key for authenticating with the Mochi API.
         """
         self.api_key = api_key
-        self.base_url = "https://app.mochi.cards/api"
         self.template_id, self.front_id, self.back_id = self._get_template()
 
     def _get_template(self) -> tuple[str, str, str]:
@@ -50,7 +99,7 @@ class MochiClient:
 
         try:
             response = requests.get(
-                f"{self.base_url}/templates",
+                f"{MOCHI_BASE_URL}/templates",
                 auth=(self.api_key, ""),
                 timeout=10,
             )
@@ -93,7 +142,7 @@ class MochiClient:
         """
         try:
             response = requests.get(
-                f"{self.base_url}/decks", auth=(self.api_key, ""), timeout=10
+                f"{MOCHI_BASE_URL}/decks", auth=(self.api_key, ""), timeout=10
             )
             response.raise_for_status()
 
@@ -136,7 +185,7 @@ class MochiClient:
 
         try:
             response = requests.post(
-                f"{self.base_url}/cards",
+                f"{MOCHI_BASE_URL}/cards",
                 auth=(self.api_key, ""),
                 json=card_data,
                 timeout=10,
@@ -256,7 +305,6 @@ class TraduzClient:
     """
 
     def __init__(self):
-        self.base_url = "https://api.mymemory.translated.net/get"
         self.config_manager = ConfigManager()
         self.mochi_client: Optional[MochiClient] = None
         self.selected_deck_id: Optional[str] = None
@@ -444,73 +492,6 @@ class TraduzClient:
             return None
         return api_key
 
-    def create_mochi_card(self, front: str, back: str) -> bool:
-        """
-        Create a card in Mochi.
-
-        :param front: The front text of the card.
-        :param back: The back text of the card.
-        :return: True if the card was created successfully, False otherwise.
-        """
-        if not self.mochi_client or not self.selected_deck_id:
-            return False
-
-        return self.mochi_client.create_card(self.selected_deck_id, front, back)
-
-    def translate_with_mymemory(
-        self, text: str, from_lang: str, to_lang: str
-    ) -> Optional[str]:
-        """
-        Translate text using MyMemory Translation API (free service)
-
-        :param text: The text to translate
-        :param from_lang: The source language code (e.g., 'en' for English)
-        :param to_lang: The target language code (e.g., 'es' for Spanish
-        :return: The translated text or None if an error occurred
-        """
-        params = {"q": text, "langpair": f"{from_lang}|{to_lang}"}
-
-        try:
-            response = requests.get(self.base_url, params=params, timeout=10)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print(f"MyMemory translation request failed: {e}")
-            return None
-
-        data = response.json()
-        if data["responseStatus"] != 200:
-            print(f"Translation error: {data['responseDetails']}")
-            return None
-        translated_text = data["responseData"]["translatedText"]
-        return translated_text
-
-    def translate_with_deepl(
-        self, text: str, from_lang: str, to_lang: str
-    ) -> Optional[str]:
-        """
-        Translate text using DeepL API.
-
-        :param text: The text to translate.
-        :param from_lang: The source language code (e.g., 'en' for English)
-        :param to_lang: The target language code (e.g., 'es' for Spanish
-        :return: The translated text or None if an error occurred.
-        """
-        if not self.deepl_translator:
-            return None
-
-        try:
-            result = self.deepl_translator.translate_text(
-                text, source_lang=from_lang, target_lang=to_lang
-            )
-        except deepl.DeepLException as e:
-            print(f"DeepL translation error: {e}")
-            return None
-
-        if isinstance(result, list):
-            # DeepL can return a list when multiple sentences are translated
-            result = result[0]
-        return result.text
-
     def load_existing_cards(self) -> list[Card]:
         """
         Load existing cards from YAML file.
@@ -529,54 +510,51 @@ class TraduzClient:
 
     def save_card(
         self, from_text: str, to_text: str, from_language: str, to_language: str
-    ) -> bool:
+    ) -> Card:
         """
         Save a new translation card to the YAML file and optionally to Mochi.
 
         :param from_text: The source text for the card.
         :param to_text: The translated text for the card.
-        :return: True if the card was saved successfully, False otherwise.
+        :return: The newly created Card object.
         """
-        try:
-            cards = self.load_existing_cards()
+        cards = self.load_existing_cards()
 
-            new_card = Card(
-                id=len(cards) + 1,
-                front=from_text,
-                back=to_text,
-                created_at=datetime.now().isoformat(),
-                language_pair=f"{from_language}-{to_language}",
+        new_card = Card(
+            id=len(cards) + 1,
+            front=from_text,
+            back=to_text,
+            created_at=datetime.now().isoformat(),
+            language_pair=f"{from_language}-{to_language}",
+        )
+
+        cards.append(new_card)
+        print(CARDS_FILE_NAME)
+        with open(CARDS_FILE_NAME, "w") as file:
+            yaml.dump(
+                [asdict(card) for card in cards],
+                file,
+                allow_unicode=True,
             )
 
-            cards.append(new_card)
+        # Also create card in Mochi if configured
+        mochi_success = False
+        if self.mochi_client and self.selected_deck_id:
+            mochi_success = self.mochi_client.create_card(
+                self.selected_deck_id, front=from_text, back=to_text
+            )
 
-            with open(CARDS_FILE_NAME, "w") as file:
-                yaml.dump(
-                    [card.__dict__ for card in cards],
-                    file,
-                    allow_unicode=True,
-                )
+        print("✅ Card saved successfully!")
+        print(f"   Front ({from_language}): {from_text}")
+        print(f"   Back ({to_language}): {to_text}")
 
-            # Also create card in Mochi if configured
-            mochi_success = False
-            if self.mochi_client and self.selected_deck_id:
-                mochi_success = self.create_mochi_card(from_text, to_text)
+        if self.mochi_client and self.selected_deck_id:
+            if mochi_success:
+                print("   🃏 Also added to Mochi deck!")
+            else:
+                print("   ⚠️  Saved locally but failed to add to Mochi")
 
-            print("✅ Card saved successfully!")
-            print(f"   Front ({from_language}): {from_text}")
-            print(f"   Back ({to_language}): {to_text}")
-
-            if self.mochi_client and self.selected_deck_id:
-                if mochi_success:
-                    print("   🃏 Also added to Mochi deck!")
-                else:
-                    print("   ⚠️  Saved locally but failed to add to Mochi")
-
-            return True
-
-        except Exception as e:
-            print(f"Error saving card: {e}")
-            return False
+        return new_card
 
     def translate_query(self, query: str, from_lang: str, to_lang: str) -> bool:
         """
@@ -588,17 +566,19 @@ class TraduzClient:
         print(f"🔄 Translating: '{query}'")
 
         if self.deepl_translator:
-            translation = self.translate_with_deepl(
-                query, from_lang=from_lang, to_lang=to_lang
+            translation = translate_with_deepl(
+                self.deepl_translator,
+                query,
+                from_lang=from_lang,
+                to_lang=to_lang,
             )
         else:
-            translation = self.translate_with_mymemory(
+            translation = translate_with_mymemory(
                 query, from_lang=from_lang, to_lang=to_lang
             )
 
-        if translation and self.save_card(
-            query, translation, from_lang, to_lang
-        ):
+        if translation:
+            self.save_card(query, translation, from_lang, to_lang)
             return True
         else:
             print("❌ Translation failed. Card not created.")
