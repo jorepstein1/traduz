@@ -1,130 +1,16 @@
 from dataclasses import asdict
 import deepl
-from pathlib import Path
-import pytest
 import requests
 import yaml
-import os
+
 from unittest.mock import Mock, patch
 from main import (
-    ConfigManager,
     TraduzClient,
     translate_with_mymemory,
     translate_with_deepl,
     CARDS_FILE_NAME,
     Card,
 )
-
-
-@pytest.fixture
-def temp_cwd(tmp_path):
-    """
-    Fixture to change the current working directory to a temporary directory
-    and then restore the original CWD after the test.
-    """
-    original_cwd = Path.cwd()  # Store the original CWD
-    os.chdir(tmp_path)  # Change CWD to the temporary directory
-    yield tmp_path  # Yield the temporary path for potential use in the test
-    os.chdir(original_cwd)  # Restore the original CWD after the test
-
-
-# ConfigManager tests
-
-
-def test_load_empty_config(tmpdir):
-    """
-    Test loading config when file doesn't exist.
-    """
-    with tmpdir.as_cwd():
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
-    assert config == {}
-
-
-def test_save_and_load_config(temp_cwd):
-    """
-    Test saving and loading configuration.
-    """
-    test_config = {
-        "mochi": {"api_key": "test_key", "selected_deck_id": "deck123"},
-        "deepl": {"api_key": "deepl_key"},
-    }
-    config_manager = ConfigManager()
-    assert config_manager.save_config(test_config) is True
-    loaded_config = config_manager.load_config()
-    assert loaded_config == test_config
-
-
-def test_get_mochi_api_key(temp_cwd):
-    """
-    Test getting Mochi API key
-    """
-    test_config = {"mochi": {"api_key": "test_mochi_key"}}
-
-    # Test when no config exists
-
-    config_manager = ConfigManager()
-    assert config_manager.get_mochi_api_key() is None
-
-    # Test when config exists
-    config_manager.save_config(test_config)
-    assert config_manager.get_mochi_api_key() == "test_mochi_key"
-
-
-def test_save_mochi_api_key(temp_cwd):
-    """
-    Test saving Mochi API key
-    """
-    config_manager = ConfigManager()
-    assert config_manager.save_mochi_api_key("new_key") is True
-    assert config_manager.get_mochi_api_key() == "new_key"
-
-
-def test_get_deepl_api_key(temp_cwd):
-    """
-    Test getting DeepL API key
-    """
-    config_manager = ConfigManager()
-    # Test when no config exists
-    assert config_manager.get_deepl_api_key() is None
-
-    # Test when config exists
-    test_config = {"deepl": {"api_key": "test_deepl_key"}}
-    config_manager.save_config(test_config)
-    assert config_manager.get_deepl_api_key() == "test_deepl_key"
-
-
-def test_save_deepl_api_key(temp_cwd):
-    """
-    Test saving DeepL API key
-    """
-    config_manager = ConfigManager()
-    assert config_manager.save_deepl_api_key("deepl_key") is True
-    assert config_manager.get_deepl_api_key() == "deepl_key"
-
-
-def test_get_selected_deck_id(temp_cwd):
-    """
-    Test getting selected deck ID
-    """
-    config_manager = ConfigManager()
-    # Test when no config exists
-    assert config_manager.get_selected_deck_id() is None
-
-    # Test when config exists
-    test_config = {"mochi": {"selected_deck_id": "deck456"}}
-    config_manager.save_config(test_config)
-    assert config_manager.get_selected_deck_id() == "deck456"
-
-
-def test_save_selected_deck_id(temp_cwd):
-    """
-    Test saving selected deck ID
-    """
-    config_manager = ConfigManager()
-    assert config_manager.save_selected_deck_id("deck789") is True
-    assert config_manager.get_selected_deck_id() == "deck789"
-
 
 # Translation function tests
 

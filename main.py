@@ -4,7 +4,7 @@ import yaml
 import os
 from datetime import datetime
 from dataclasses import dataclass, asdict
-from typing import Optional, Any
+from typing import Optional
 
 from mochi import (
     MochiConfig,
@@ -12,7 +12,15 @@ from mochi import (
     create_card_on_mochi,
 )
 
-CONFIG_FILE_NAME = "config.yaml"
+from config import (
+    get_mochi_api_key,
+    save_mochi_api_key,
+    get_deepl_api_key,
+    save_deepl_api_key,
+    get_selected_deck_id,
+    save_selected_deck_id,
+)
+
 CARDS_FILE_NAME = "cards.yaml"
 
 MYMEMORY_BASE_URL = "https://api.mymemory.translated.net/get"
@@ -80,115 +88,12 @@ def translate_with_deepl(
     return result.text
 
 
-class ConfigManager:
-    """
-    Persistent configuration manager for user's preferences
-    """
-
-    def load_config(self) -> dict[str, Any]:
-        """
-        Load configuration from YAML file.
-
-        :return: The loaded configuration dict
-        """
-        if os.path.exists(CONFIG_FILE_NAME):
-            try:
-                with open(CONFIG_FILE_NAME) as file:
-                    return yaml.safe_load(file) or {}
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                return {}
-        return {}
-
-    def save_config(self, config: dict[str, Any]) -> bool:
-        """
-        Save configuration to YAML file.
-
-        :param config: The configuration to save.
-        :return: True if the configuration was saved successfully, False otherwise.
-        """
-        try:
-            with open(CONFIG_FILE_NAME, "w") as file:
-                yaml.dump(config, file)
-            return True
-        except Exception as e:
-            print(f"Error saving config: {e}")
-            return False
-
-    def get_mochi_api_key(self) -> Optional[str]:
-        """
-        Get Mochi API key from config.
-
-        :return: The Mochi API key if it exists, None otherwise.
-        """
-        config = self.load_config()
-        return config.get("mochi", {}).get("api_key")
-
-    def save_mochi_api_key(self, api_key: str) -> bool:
-        """
-        Save Mochi API key to config.
-
-        :param api_key: The Mochi API key to save.
-        :return: True if the API key was saved successfully, False otherwise.
-        """
-        config = self.load_config()
-        if "mochi" not in config:
-            config["mochi"] = {}
-        config["mochi"]["api_key"] = api_key
-        return self.save_config(config)
-
-    def get_deepl_api_key(self) -> Optional[str]:
-        """
-        Get DeepL API key from config.
-
-        :return: The DeepL API key if it exists, None otherwise.
-        """
-        config = self.load_config()
-        return config.get("deepl", {}).get("api_key")
-
-    def save_deepl_api_key(self, api_key: str) -> bool:
-        """
-        Save DeepL API key to config.
-
-        :param api_key: The DeepL API key to save.
-        :return: True if the API key was saved successfully, False otherwise.
-        """
-        config = self.load_config()
-        if "deepl" not in config:
-            config["deepl"] = {}
-        config["deepl"]["api_key"] = api_key
-        return self.save_config(config)
-
-    def get_selected_deck_id(self) -> Optional[str]:
-        """
-        Get selected deck ID from config.
-
-        :return: The selected deck ID if it exists, None otherwise.
-        """
-        config = self.load_config()
-        return config.get("mochi", {}).get("selected_deck_id")
-
-    def save_selected_deck_id(self, deck_id: str) -> bool:
-        """
-        Save selected deck ID to config.
-
-        :param deck_id: The selected deck ID to save.
-        :return: True if the deck ID was saved successfully, False otherwise.
-        """
-        config = self.load_config()
-        if "mochi" not in config:
-            config["mochi"] = {}
-        config["mochi"]["selected_deck_id"] = deck_id
-        return self.save_config(config)
-
-
 class TraduzClient:
     """
     The main client for the Traduz application, handling translations, card management, and user input.
     """
 
     def __init__(self):
-        self.config_manager = ConfigManager()
         self.selected_deck_id: Optional[str] = None
         self.deepl_translator: Optional[deepl.Translator] = None
         self.mochi_config: Optional[MochiConfig] = None
@@ -211,10 +116,12 @@ class TraduzClient:
         if use_mochi not in ["y", "yes"]:
             return None
 
-        existing_api_key = self.config_manager.get_mochi_api_key()
-        existing_deck_id = self.config_manager.get_selected_deck_id()
+        existing_api_key = get_mochi_api_key()
+        existing_deck_id = get_selected_deck_id()
         if mochi_config := get_mochi_config(existing_api_key, existing_deck_id):
             self.mochi_config = mochi_config
+            save_mochi_api_key(mochi_config.api_key)
+            save_selected_deck_id(mochi_config.selected_deck_id)
             return mochi_config
         return None
 
@@ -250,7 +157,7 @@ class TraduzClient:
             self.deepl_translator = None
             return False
 
-        self.config_manager.save_deepl_api_key(api_key)
+        save_deepl_api_key(api_key)
         return True
 
     def _get_deepl_api_key(self) -> Optional[str]:
@@ -260,7 +167,7 @@ class TraduzClient:
         :return: The DeepL API key if provided, None otherwise.
         """
         # Check if API key already exists
-        existing_api_key = self.config_manager.get_deepl_api_key()
+        existing_api_key = get_deepl_api_key()
 
         if existing_api_key:
             print("✅ Found existing DeepL API key.")
