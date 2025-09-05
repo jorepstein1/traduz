@@ -1,3 +1,5 @@
+import deepl
+import enum
 import requests
 import yaml
 import os
@@ -22,6 +24,11 @@ class Card:
 class MochiDeck:
     id: str
     name: str
+
+
+class TranslationService(enum.Enum):
+    MY_MEMORY = "MyMemory"
+    DEEPL = "DeepL"  # Placeholder for potential future use
 
 
 class MochiClient:
@@ -198,6 +205,28 @@ class ConfigManager:
         config["mochi"]["api_key"] = api_key
         return self.save_config(config)
 
+    def get_deepl_api_key(self) -> Optional[str]:
+        """
+        Get DeepL API key from config.
+
+        :return: The DeepL API key if it exists, None otherwise.
+        """
+        config = self.load_config()
+        return config.get("deepl", {}).get("api_key")
+
+    def save_deepl_api_key(self, api_key: str) -> bool:
+        """
+        Save DeepL API key to config.
+
+        :param api_key: The DeepL API key to save.
+        :return: True if the API key was saved successfully, False otherwise.
+        """
+        config = self.load_config()
+        if "deepl" not in config:
+            config["deepl"] = {}
+        config["deepl"]["api_key"] = api_key
+        return self.save_config(config)
+
     def get_selected_deck_id(self) -> Optional[str]:
         """
         Get selected deck ID from config.
@@ -221,12 +250,17 @@ class ConfigManager:
         return self.save_config(config)
 
 
-class Translator:
+class TraduzClient:
+    """
+    The main client for the Traduz application, handling translations, card management, and user input.
+    """
+
     def __init__(self):
         self.base_url = "https://api.mymemory.translated.net/get"
         self.config_manager = ConfigManager()
         self.mochi_client: Optional[MochiClient] = None
         self.selected_deck_id: Optional[str] = None
+        self.deepl_translator: Optional[deepl.Translator] = None
 
     def setup_mochi_integration(self) -> bool:
         """
@@ -244,10 +278,9 @@ class Translator:
         )
 
         if use_mochi not in ["y", "yes"]:
-            print("📝 Cards will only be saved to local YAML file.")
             return False
 
-        if (api_key := self._get_api_key()) is None:
+        if (api_key := self._get_mochi_api_key()) is None:
             return False
 
         # Test the API key
@@ -258,15 +291,10 @@ class Translator:
             print("❌ Failed to connect to Mochi. Please check your API key.")
             return False
 
-        # Save API key
-        if self.config_manager.save_mochi_api_key(api_key):
-            print("✅ API key saved successfully!")
-        else:
-            print("⚠️ API key works but couldn't save to config file.")
-
+        self.config_manager.save_mochi_api_key(api_key)
         return self._select_deck()
 
-    def _get_api_key(self) -> Optional[str]:
+    def _get_mochi_api_key(self) -> Optional[str]:
         """
         Prompt user for Mochi API key if not already set.
 
@@ -299,7 +327,8 @@ class Translator:
 
     def _select_deck(self) -> bool:
         """
-        Allow user to select a deck. This deck will be used for adding new cards.
+        Allow user to select a deck. This deck will be used for adding new
+        cards.
 
         :return: True if a deck was selected successfully, False otherwise.
         """
@@ -340,22 +369,81 @@ class Translator:
                     selected_deck = decks[deck_index]
                     self.selected_deck_id = selected_deck.id
 
-                    # Save selected deck
-                    if self.config_manager.save_selected_deck_id(
-                        selected_deck.id
-                    ):
-                        print(f"✅ Selected deck: {selected_deck.name}")
-                        return True
-                    else:
-                        print(
-                            "⚠️  Deck selected but couldn't save to config file."
-                        )
-                        return True
+                    self.config_manager.save_selected_deck_id(selected_deck.id)
+                    print(f"✅ Selected deck: {selected_deck.name}")
                 else:
                     print("❌ Invalid selection. Please try again.")
-
             except ValueError:
                 print("❌ Please enter a valid number.")
+
+    def setup_deepl_integration(self) -> bool:
+        """
+        Set up DeepL integration if user wants it.
+
+        :return: True if integration was set up successfully, False otherwise.
+        """
+        print("\n🌐 DeepL Translation Integration")
+        print("-" * 30)
+
+        use_deepl = (
+            input(
+                "Would you like to connect to DeepL for translations? (y/n): "
+            )
+            .strip()
+            .lower()
+        )
+
+        if use_deepl not in ["y", "yes"]:
+            return False
+
+        if (api_key := self._get_deepl_api_key()) is None:
+            return False
+
+        self.deepl_translator = deepl.Translator(api_key)
+        # Test the API key with a simple translation
+        try:
+            self.deepl_translator.translate_text("Hello", target_lang="ES")
+        except deepl.DeepLException as e:
+            print(f"❌ DeepL error: {e}")
+            self.deepl_translator = None
+            return False
+
+        self.config_manager.save_deepl_api_key(api_key)
+        return True
+
+    def _get_deepl_api_key(self) -> Optional[str]:
+        """
+        Prompt user for DeepL API key if not already set.
+
+        :return: The DeepL API key if provided, None otherwise.
+        """
+
+        # Check if API key already exists
+        existing_api_key = self.config_manager.get_deepl_api_key()
+
+        if existing_api_key:
+            print("✅ Found existing DeepL API key.")
+            use_existing = (
+                input("Use existing DeepL API key? (y/n): ").strip().lower()
+            )
+            if use_existing in ["y", "yes"]:
+                return existing_api_key
+
+        # Get new API key
+        print("\n🔑 To connect to DeepL, you need an API key.")
+        print("   1. Go to https://www.deepl.com/pro-api")
+        print(
+            "   2. Sign up for an account and find your API key in the Account"
+            " settings"
+        )
+        print("   3. Copy and paste it below")
+
+        api_key = input("\nEnter your DeepL API key: ").strip()
+
+        if not api_key:
+            print("❌ No API key provided. DeepL integration disabled.")
+            return None
+        return api_key
 
     def create_mochi_card(self, front: str, back: str) -> bool:
         """
@@ -370,36 +458,51 @@ class Translator:
 
         return self.mochi_client.create_card(self.selected_deck_id, front, back)
 
-    def translate_text(self, text: str) -> Optional[str]:
+    def translate_with_mymemory(self, text: str) -> Optional[str]:
         """
         Translate text using MyMemory Translation API (free service)
 
         :param text: The text to translate
         :return: The translated text or None if an error occurred
         """
-        try:
-            params = {"q": text, "langpair": "en|es"}
+        params = {"q": text, "langpair": "en|essdfgsdfg"}
 
+        try:
             response = requests.get(self.base_url, params=params, timeout=10)
             response.raise_for_status()
-
-            data = response.json()
-
-            if data.get("responseStatus") == 200:
-                translated_text = data["responseData"]["translatedText"]
-                return translated_text
-            else:
-                print(
-                    f"Translation error: {data.get('responseDetails', 'Unknown error')}"
-                )
-                return None
-
         except requests.exceptions.RequestException as e:
-            print(f"API request failed: {e}")
+            print(f"MyMemory translation request failed: {e}")
             return None
-        except Exception as e:
-            print(f"Translation failed: {e}")
+
+        data = response.json()
+        if data["responseStatus"] != 200:
+            print(f"Translation error: {data['responseDetails']}")
             return None
+        translated_text = data["responseData"]["translatedText"]
+        return translated_text
+
+    def translate_with_deepl(self, text: str) -> Optional[str]:
+        """
+        Translate text using DeepL API.
+
+        :param text: The text to translate.
+        :return: The translated text or None if an error occurred.
+        """
+        if not self.deepl_translator:
+            return None
+
+        try:
+            result = self.deepl_translator.translate_text(
+                text, target_lang="ES"
+            )
+        except deepl.DeepLException as e:
+            print(f"DeepL translation error: {e}")
+            return None
+
+        if isinstance(result, list):
+            # DeepL can return a list when multiple sentences are translated
+            result = result[0]
+        return result.text
 
     def load_existing_cards(self) -> list[Card]:
         """
@@ -468,16 +571,19 @@ class Translator:
             print(f"Error saving card: {e}")
             return False
 
-    def create_translation_card(self, english_query: str) -> bool:
+    def translate_query(self, english_query: str) -> bool:
         """
-        Create a new translation card.
+        Translate the given English query and save the result as a card.
 
         :param english_query: The English text to translate.
         :return: True if the card was created successfully, False otherwise.
         """
         print(f"🔄 Translating: '{english_query}'")
 
-        spanish_translation = self.translate_text(english_query)
+        if self.deepl_translator:
+            spanish_translation = self.translate_with_deepl(english_query)
+        else:
+            spanish_translation = self.translate_with_mymemory(english_query)
 
         if spanish_translation and self.save_card(
             english_query, spanish_translation
@@ -510,10 +616,20 @@ def main() -> None:
     print("🌍 Traduz - English to Spanish Translation Cards")
     print("=" * 50)
 
-    translator = Translator()
+    traduz_client = TraduzClient()
 
-    # Set up Mochi integration at startup
-    translator.setup_mochi_integration()
+    # Set up Mochi and DeepL integration at startup
+    use_mochi = traduz_client.setup_mochi_integration()
+    if not use_mochi:
+        print("📝 Cards will only be saved to local YAML file.")
+    else:
+        print("✅ Successfully connected to Mochi Cards!")
+
+    use_deepl = traduz_client.setup_deepl_integration()
+    if not use_deepl:
+        print("🔤 Translations will use MyMemory (free service).")
+    else:
+        print("✅ Successfully connected to DeepL!")
 
     while True:
         print("\nOptions:")
@@ -532,10 +648,10 @@ def main() -> None:
                 print("❌ Please enter some text to translate.")
                 continue
 
-            translator.create_translation_card(english_query)
+            traduz_client.translate_query(english_query)
 
         elif choice == "2":
-            translator.display_all_cards()
+            traduz_client.display_all_cards()
 
         elif choice == "3":
             print("👋 Goodbye!")
