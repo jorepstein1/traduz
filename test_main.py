@@ -7,13 +7,16 @@ import yaml
 import os
 from unittest.mock import Mock, patch
 from main import (
-    MochiClient,
+    MochiConfig,
     ConfigManager,
     TraduzClient,
+    create_card_on_mochi,
     translate_with_mymemory,
     translate_with_deepl,
     CARDS_FILE_NAME,
     Card,
+    get_mochi_template,
+    get_all_mochi_decks,
 )
 
 
@@ -124,21 +127,7 @@ def test_save_selected_deck_id(temp_cwd):
     assert config_manager.get_selected_deck_id() == "deck789"
 
 
-def get_mock_mochi_client():
-    """
-    Fixture to create a MochiClient with a mock API key
-    """
-    with patch.object(
-        MochiClient,
-        "_get_template",
-        return_value=("template123", "front456", "back789"),
-    ):
-        client = MochiClient("mock_api_key")
-    return client
-
-
-@patch("main.requests.get")
-def test_get_template_success(mock_get):
+def test_get_template_success():
     """
     Test successful template retrieval
     """
@@ -155,18 +144,16 @@ def test_get_template_success(mock_get):
             }
         ]
     }
-    mock_get.return_value = mock_response
 
-    client = get_mock_mochi_client()
-    template_id, front_id, back_id = client.get_template()
+    with patch("main.requests.get", return_value=mock_response):
+        template_id, front_id, back_id = get_mochi_template("mock_api_key")
 
     assert template_id == "template123"
     assert front_id == "front456"
     assert back_id == "back789"
 
 
-@patch("main.requests.get")
-def test_get_decks_success(mock_get):
+def test_get_decks_success():
     """
     Test successful deck retrieval
     """
@@ -178,9 +165,8 @@ def test_get_decks_success(mock_get):
             {"id": "deck2", "name": "French Phrases"},
         ]
     }
-    mock_get.return_value = mock_response
-    mock_mochi_client = get_mock_mochi_client()
-    decks = mock_mochi_client.get_decks()
+    with patch("main.requests.get", return_value=mock_response):
+        decks = get_all_mochi_decks("mock_api_key")
 
     assert len(decks) == 2
     assert decks[0].id == "deck1"
@@ -189,43 +175,49 @@ def test_get_decks_success(mock_get):
     assert decks[1].name == "French Phrases"
 
 
-@patch("main.requests.get")
-def test_get_decks_failure(mock_get):
+def test_get_decks_failure():
     """
     Test deck retrieval failure
     """
-    mock_get.side_effect = requests.exceptions.RequestException("Network error")
-
-    mock_mochi_client = get_mock_mochi_client()
-    decks = mock_mochi_client.get_decks()
+    with patch(
+        "main.requests.get",
+        side_effect=requests.exceptions.RequestException("Network error"),
+    ):
+        decks = get_all_mochi_decks("mock_api_key")
 
     assert decks == []
 
 
-@patch("main.requests.post")
-def test_create_card_success(mock_post):
+def get_mochi_config() -> MochiConfig:
+    return MochiConfig(
+        api_key="mock_api_key",
+        selected_deck_id="deck123",
+        template_id="template123",
+        front_id="front456",
+        back_id="back789",
+    )
+
+
+def test_create_card_success():
     """
     Test successful card creation
     """
-    mock_response = Mock()
-    mock_response.raise_for_status.return_value = None
-    mock_post.return_value = mock_response
-
-    mock_mochi_client = get_mock_mochi_client()
-    result = mock_mochi_client.create_card("deck123", "Hello", "Hola")
-
+    mochi_config = get_mochi_config()
+    with patch("main.requests.post"):
+        result = create_card_on_mochi(mochi_config, "Hello", "Hola")
     assert result is True
-    mock_post.assert_called_once()
 
 
-@patch("main.requests.post")
-def test_create_card_failure(mock_post):
+def test_create_card_failure():
     """
     Test card creation failure
     """
-    mock_post.side_effect = requests.exceptions.RequestException("API error")
-    mock_mochi_client = get_mock_mochi_client()
-    result = mock_mochi_client.create_card("deck123", "Hello", "Hola")
+    mochi_config = get_mochi_config()
+    with patch(
+        "main.requests.post",
+        side_effect=requests.exceptions.RequestException("API error"),
+    ):
+        result = create_card_on_mochi(mochi_config, "Hello", "Hola")
 
     assert result is False
 
