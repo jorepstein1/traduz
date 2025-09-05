@@ -1,0 +1,6 @@
+# Example configuration file for Traduz
+# This file will be created automatically when you set up Mochi integration
+
+mochi:
+  api_key: "your_mochi_api_key_here"
+  selected_deck_id: "your_selected_deck_id_here"
