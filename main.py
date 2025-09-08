@@ -6,13 +6,13 @@ from datetime import datetime
 from dataclasses import dataclass, asdict
 from typing import Optional
 
-from mochi import (
+from traduz.mochi import (
     MochiConfig,
     get_mochi_config,
     create_card_on_mochi,
 )
 
-from config import (
+from traduz.config import (
     get_mochi_api_key,
     save_mochi_api_key,
     get_deepl_api_key,
@@ -90,7 +90,8 @@ def translate_with_deepl(
 
 class TraduzClient:
     """
-    The main client for the Traduz application, handling translations, card management, and user input.
+    The main client for the Traduz application, handling translations, card
+    management, and user input.
     """
 
     def __init__(self):
@@ -304,7 +305,7 @@ class TraduzClient:
             print("-" * 30)
 
 
-def main() -> None:
+def main():
     print("🌍 Traduz - English to Spanish Translation Cards")
     print("=" * 50)
 

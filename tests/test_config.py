@@ -1,4 +1,4 @@
-from config import (
+from traduz.config import (
     get_deepl_api_key,
     get_mochi_api_key,
     get_selected_deck_id,
