@@ -226,7 +226,7 @@ class TraduzClient:
             id=len(cards) + 1,
             front=from_text,
             back=to_text,
-            created_at=datetime.now().isoformat(),
+            created_at=datetime.now().strftime("%d-%m-%Y %H:%M"),
             language_pair=f"{from_language}-{to_language}",
         )
 

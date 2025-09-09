@@ -1,15 +1,15 @@
 # Traduz - English<-> Translation Cards
 
-A Python script that creates translation flashcards by translating between English and Spanish using external translation APIs and storing the results locally and optionally to Mochi Cards.
+A Python script that creates translation flashcards by translating between English and Spanish using external translation APIs and storing the results locally and optionally to [Mochi Cards](https://mochi.cards/).
 
 ## Features
 
 - 🌍 Translates between English and Spanish using multiple translation services:
-  - **MyMemory Translation API** (free, no account required)
-  - **DeepL API** (free, requires account, higher quality)
+  - [**MyMemory Translation API**](https://mymemory.translated.net/) (free, no account required)
+  - [**DeepL API**](https://www.deepl.com/) (free, requires account, higher quality)
 - 🔄 Bidirectional translation support (English ↔ Spanish)
 - 📚 Stores translation pairs as flashcard entries in YAML format
-- 🃏 Mochi Cards integration - sync cards to your Mochi decks
+- 🃏 [Mochi Cards](https://mochi.cards/) integration - sync cards to your Mochi decks
 - 🎯 Interactive command-line interface
 - ⚡ Fast and lightweight
 - 🔧 Configuration management for API keys and deck selection
@@ -48,14 +48,14 @@ python main.py
 
 When you first run the script, it will guide you through optional integrations:
 
-1. **Mochi Cards Integration** (optional):
+1. **[Mochi Cards](https://mochi.cards/) Integration** (optional):
 
    - Choose 'y' if you want to sync cards to Mochi
    - Get your API key from https://app.mochi.cards (go to Account Settings)
    - Select a deck from your existing Mochi decks for new cards to be added to
    - Your settings will be saved in `config.yaml` for future use
 
-2. **DeepL Translation Integration** (optional):
+2. **[DeepL Translator](https://www.deepl.com/) Integration** (optional):
 
    - Choose 'y' for higher quality translations (requires API key)
    - Get your API key from https://www.deepl.com/pro-api
@@ -66,13 +66,13 @@ When you first run the script, it will guide you through optional integrations:
 
 The script supports two translation services:
 
-- **MyMemory** (default, free):
+- **[MyMemory](https://mymemory.translated.net/)** (default, free):
 
   - No account required
   - Good for basic translations and testing the script
   - Rate limits may apply for heavy usage
 
-- **DeepL** (premium):
+- **[DeepL](https://www.deepl.com/)** (premium):
   - Requires account and API key
   - Superior translation quality
   - Better context understanding
@@ -114,7 +114,7 @@ Enter your Mochi API key: your_api_key_here
 Select a deck (1-3): 1
 ✅ Selected deck: Spanish Vocabulary
 
-🌐 DeepL Translation Integration
+🌐 DeepL Translator Integration
 ------------------------------
 Would you like to connect to DeepL for translations? (y/n): y
 
@@ -167,17 +167,17 @@ Local storage of all translation cards:
 
 ```yaml
 - back: Hola
-  created_at: "2025-09-03T13:42:03.049570"
+  created_at: "2025-09-03 13:42"
   front: Hello
   id: 1
   language_pair: en-es
 - back: Buenos días
-  created_at: "2025-09-03T13:45:12.123456"
+  created_at: "2025-09-03 13:45"
   front: Good morning
   id: 2
   language_pair: en-es
 - back: Thank you
-  created_at: "2025-09-03T14:20:30.789012"
+  created_at: "2025-09-03 14:20"
   front: Gracias
   id: 3
   language_pair: es-en
@@ -185,7 +185,7 @@ Local storage of all translation cards:
 
 ## Integrations
 
-### Mochi Cards Integration
+### [Mochi Cards](https://mochi.cards/) Integration
 
 This script integrates with [Mochi Cards](https://mochi.cards), a spaced repetition flashcard app. To use this feature:
 
@@ -200,11 +200,11 @@ This script integrates with [Mochi Cards](https://mochi.cards), a spaced repetit
 - 🔄 Automatic sync to your chosen Mochi deck
 - 📱 Access cards on all devices through Mochi apps
 
-### DeepL Translation Integration
+### [DeepL Translator](https://www.deepl.com/) Integration
 
 This script can optionally use [DeepL](https://www.deepl.com/), a premium translation service known for high-quality translations:
 
-1. **Create a DeepL account** at https://www.deepl.com/pro-api
+1. **Create a [DeepL](https://www.deepl.com/) account** at https://www.deepl.com/pro-api
 2. **Get your API key** from your account settings
 3. **Run the script** and choose to connect to DeepL
 
@@ -217,11 +217,11 @@ This script can optionally use [DeepL](https://www.deepl.com/), a premium transl
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.12+
 - Internet connection for translation API calls
 - Dependencies listed in `requirements.txt`
-- Optional: Mochi Cards Pro account for card synchronization
-- Optional: DeepL account for premium translations
+- Optional: [Mochi Cards](https://mochi.cards/) Pro account for card synchronization
+- Optional: [DeepL](https://www.deepl.com/) account for premium translations
 
 ## License
 
