@@ -1,6 +1,6 @@
 # Traduz - English <-> Spanish Translation Cards
 
-A Python script that creates translation flashcards by translating between English and Spanish using external translation APIs and storing the results locally and optionally to [Mochi Cards](https://mochi.cards/).
+Tradu (/trəˈdu/) is Python script that creates translation flashcards by translating between English and Spanish using external translation APIs and storing the results locally and optionally to [Mochi Cards](https://mochi.cards/).
 
 ## Features
 

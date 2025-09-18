@@ -5,7 +5,7 @@ import yaml
 
 from unittest.mock import Mock, patch
 from main import (
-    TraduzClient,
+    TraduClient,
     translate_with_mymemory,
     translate_with_deepl,
     CARDS_FILE_NAME,
@@ -77,15 +77,15 @@ def test_translate_with_deepl_failure():
     assert result is None
 
 
-# TraduzClient tests
+# TraduClient tests
 
 
 def test_load_existing_cards_empty(temp_cwd):
     """
     Test loading cards when file doesn't exist
     """
-    traduz_client = TraduzClient()
-    cards = traduz_client.load_existing_cards()
+    tradu_client = TraduClient()
+    cards = tradu_client.load_existing_cards()
     assert cards == []
 
 
@@ -103,8 +103,8 @@ def test_load_existing_cards_with_data(temp_cwd):
     with open(CARDS_FILE_NAME, "w") as f:
         yaml.dump([asdict(test_card)], f)
 
-    traduz_client = TraduzClient()
-    cards = traduz_client.load_existing_cards()
+    tradu_client = TraduClient()
+    cards = tradu_client.load_existing_cards()
     assert len(cards) == 1
     assert cards[0].id == 1
     assert cards[0].front == "Hello"
@@ -115,14 +115,14 @@ def test_save_card_success(temp_cwd):
     """
     Test successful card saving
     """
-    traduz_client = TraduzClient()
-    new_card = traduz_client.save_card("Hello", "Hola", "EN", "ES")
+    tradu_client = TraduClient()
+    new_card = tradu_client.save_card("Hello", "Hola", "EN", "ES")
     assert new_card.front == "Hello"
     assert new_card.back == "Hola"
     assert new_card.language_pair == "EN-ES"
 
     # Verify card was saved
-    cards = traduz_client.load_existing_cards()
+    cards = tradu_client.load_existing_cards()
     assert len(cards) == 1
     assert cards[0] == new_card
 
@@ -139,14 +139,14 @@ def test_translate_query_success(temp_cwd):
         "responseData": {"translatedText": "Hola"},
     }
 
-    traduz_client = TraduzClient()
-    with patch("main.requests.get", return_value=mock_response):
-        result = traduz_client.translate_query("Hello", "en", "es")
+    tradu_client = TraduClient()
+    with patch("main.translate_with_mymemory", return_value="Hola"):
+        result = tradu_client.translate_query("Hello", "en", "es")
 
     assert result is True
 
     # Verify card was created
-    cards = traduz_client.load_existing_cards()
+    cards = tradu_client.load_existing_cards()
     assert len(cards) == 1
     assert cards[0].front == "Hello"
     assert cards[0].back == "Hola"
@@ -156,17 +156,17 @@ def test_translate_query_failure(temp_cwd):
     """
     Test translation query failure
     """
-    traduz_client = TraduzClient()
+    tradu_client = TraduClient()
     with patch(
         "main.requests.get",
         side_effect=requests.exceptions.RequestException("Network error"),
     ):
-        result = traduz_client.translate_query("Hello", "en", "es")
+        result = tradu_client.translate_query("Hello", "en", "es")
 
     assert result is False
 
     # Verify no card was created
-    cards = traduz_client.load_existing_cards()
+    cards = tradu_client.load_existing_cards()
     assert len(cards) == 0
 
 
@@ -186,7 +186,7 @@ def test_end_to_end_translation(
     }
 
     # Create client and translate
-    client = TraduzClient()
+    client = TraduClient()
     with patch("main.requests.get", return_value=mock_response):
         result = client.translate_query("Hello world", "en", "es")
 

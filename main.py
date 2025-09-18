@@ -6,13 +6,13 @@ from datetime import datetime
 from dataclasses import dataclass, asdict
 from typing import Optional
 
-from traduz.mochi import (
+from tradu.mochi import (
     MochiConfig,
     get_mochi_config,
     create_card_on_mochi,
 )
 
-from traduz.config import (
+from tradu.config import (
     get_mochi_api_key,
     save_mochi_api_key,
     get_deepl_api_key,
@@ -88,9 +88,9 @@ def translate_with_deepl(
     return result.text
 
 
-class TraduzClient:
+class TraduClient:
     """
-    The main client for the Traduz application, handling translations, card
+    The main client for the Tradu application, handling translations, card
     management, and user input.
     """
 
@@ -306,19 +306,19 @@ class TraduzClient:
 
 
 def main():
-    print("🌍 Traduz - English to Spanish Translation Cards")
+    print("🌍 Tradu - English to Spanish Translation Cards")
     print("=" * 50)
 
-    traduz_client = TraduzClient()
+    tradu_client = TraduClient()
 
     # Set up Mochi and DeepL integration at startup
-    use_mochi = traduz_client.setup_mochi_integration()
+    use_mochi = tradu_client.setup_mochi_integration()
     if not use_mochi:
         print("📝 Cards will only be saved to local YAML file.")
     else:
         print("✅ Successfully connected to Mochi Cards!")
 
-    use_deepl = traduz_client.setup_deepl_integration()
+    use_deepl = tradu_client.setup_deepl_integration()
     if not use_deepl:
         print("🔤 Translations will use MyMemory (free service).")
     else:
@@ -352,10 +352,10 @@ def main():
                 print("❌ Please enter some text to translate.")
                 continue
 
-            traduz_client.translate_query(query, from_lang, to_lang)
+            tradu_client.translate_query(query, from_lang, to_lang)
 
         elif choice == "2":
-            traduz_client.display_all_cards()
+            tradu_client.display_all_cards()
 
         elif choice == "3":
             print("👋 Goodbye!")

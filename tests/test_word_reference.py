@@ -1,4 +1,4 @@
-from traduz import word_reference
+from tradu import word_reference
 
 
 def test_hola():

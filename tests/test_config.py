@@ -1,4 +1,4 @@
-from traduz.config import (
+from tradu.config import (
     get_deepl_api_key,
     get_mochi_api_key,
     get_selected_deck_id,
