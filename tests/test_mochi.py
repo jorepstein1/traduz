@@ -1,6 +1,6 @@
 import requests
 from unittest.mock import Mock, patch
-from traduz.mochi import (
+from tradu.mochi import (
     MochiConfig,
     create_card_on_mochi,
     get_mochi_template,
@@ -26,7 +26,7 @@ def test_get_template_success():
         ]
     }
 
-    with patch("traduz.mochi.requests.get", return_value=mock_response):
+    with patch("tradu.mochi.requests.get", return_value=mock_response):
         template_id, front_id, back_id = get_mochi_template("mock_api_key")
 
     assert template_id == "template123"
@@ -46,7 +46,7 @@ def test_get_decks_success():
             {"id": "deck2", "name": "French Phrases"},
         ]
     }
-    with patch("traduz.mochi.requests.get", return_value=mock_response):
+    with patch("tradu.mochi.requests.get", return_value=mock_response):
         decks = get_all_mochi_decks("mock_api_key")
 
     assert len(decks) == 2
@@ -61,7 +61,7 @@ def test_get_decks_failure():
     Test deck retrieval failure
     """
     with patch(
-        "traduz.mochi.requests.get",
+        "tradu.mochi.requests.get",
         side_effect=requests.exceptions.RequestException("Network error"),
     ):
         decks = get_all_mochi_decks("mock_api_key")
@@ -84,7 +84,7 @@ def test_create_card_success():
     Test successful card creation
     """
     mochi_config = get_mochi_config()
-    with patch("traduz.mochi.requests.post"):
+    with patch("tradu.mochi.requests.post"):
         result = create_card_on_mochi(mochi_config, "Hello", "Hola")
     assert result is True
 
@@ -95,7 +95,7 @@ def test_create_card_failure():
     """
     mochi_config = get_mochi_config()
     with patch(
-        "traduz.mochi.requests.post",
+        "tradu.mochi.requests.post",
         side_effect=requests.exceptions.RequestException("API error"),
     ):
         result = create_card_on_mochi(mochi_config, "Hello", "Hola")
